@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Página de Imagens MQTT</title>
+  <style>
+    .overlay-image {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      mix-blend-mode: lighten;
+    }
+  </style>
+</head>
+<body>
+  <h1>Página de Imagens MQTT</h1>
+
+  <div id="images-container">
+    <!-- As imagens serão adicionadas dinamicamente aqui -->
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.js"></script>
+  <script>
+    const socket = io();
+
+    socket.on('connect', () => {
+      console.log('Conectado ao servidor');
+    });
+
+    socket.on('atualizarImagem', ({ deviceId, imageUrl, payload }) => {
+      const overlayImage = document.querySelector(`img[data-device-id="${deviceId}"]`);
+      if (overlayImage) {
+        overlayImage.src = imageUrl;
+        
+        overlayImage.setAttribute('data-device-id', deviceId);
+        if (payload === 'ON') {
+          overlayImage.style.display = 'initial';
+        } else {
+          overlayImage.style.display = 'none';
+        }
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Desconectado do servidor');
+    });
+
+    function fetchDevices() {
+      fetch('/devices')
+        .then(response => response.json())
+        .then(devices => {
+          const imagesContainer = document.getElementById('images-container');
+          imagesContainer.innerHTML = '';
+
+          devices.forEach(device => {
+            const { deviceId, imageUrl, payload } = device;
+
+            const image = document.createElement('img');
+            image.className = 'overlay-image';
+            image.setAttribute('data-device-id', deviceId);
+            if (payload === 'ON') {
+              image.style.display = 'initial';
+            } else {
+              image.style.display = 'none';
+            }
+            image.src = imageUrl;
+
+            imagesContainer.appendChild(image);
+          });
+        });
+    }
+
+    // Solicitar informações dos dispositivos ao servidor e atualizar a página
+    fetchDevices();
+
+    // Atualizar a página automaticamente a cada 5 segundos
+    setInterval(fetchDevices, 5000);
+  </script>
+</body>
+</html>
