@@ -221,13 +221,13 @@ function startMqttServer() {
     if (deviceDomain == "wled"){
       // This device is a WLED
       // To identify if the device is on we refer ourself to the current preset
-      if (mqttMessage == "PL=10"){
+      if (mqttMessage !== "PL=10"){
         device.payload = "ON";
       }else{
         device.payload = "OFF";
       }
     }
-    
+
     if (device) {
       const { deviceId, imageUrl, payload, name } = device;
       const state = message.toString();
