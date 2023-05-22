@@ -33,7 +33,7 @@ db.connect((err) => {
   console.log('Connected to MySQL database');
 
   // Load all devices from the database into the collection
-  db.query('SELECT tele_topic, name, state_field, imageUrl, power_level1, power_level2, power_level3 FROM devices WHERE enable = 1 AND tele_topic IS NOT NULL', (err, rows) => {
+  db.query('SELECT tele_topic, domain, name, state_field, imageUrl, power_level1, power_level2, power_level3 FROM devices WHERE enable = 1 AND tele_topic IS NOT NULL', (err, rows) => {
     if (err) {
       console.error('Error fetching devices from MySQL database:', err);
       return;
@@ -41,8 +41,10 @@ db.connect((err) => {
 
     rows.forEach((row) => {
         const device = {
-          deviceId: row.tele_topic,
+          deviceId: row.domain + "/" + row.name,
+          deviceDomain: row.domain,
           deviceName: row.name,
+          deviceTopic: row.tele_topic,
           stateField: row.state_field,
           imageUrl: row.imageUrl,
           powerLevel1: row.power_level1,
@@ -58,7 +60,7 @@ db.connect((err) => {
           } else {
             console.warn(`The image "${row.imageUrl}" does not exist. Using alternative image.`);
             device.imageUrl = '1920x1080/render.png'; // Specify the path to the alternative image
-            devices.set(row.name, device); 
+            devices.set(row.name, device); //TODO use deviceId instead of topic
           }
         });
       });
@@ -67,6 +69,7 @@ db.connect((err) => {
  
     // Start the MQTT server after loading the devices
     startMqttServer();
+    
   });
 
 
