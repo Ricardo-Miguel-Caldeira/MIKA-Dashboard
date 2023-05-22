@@ -13,7 +13,7 @@
     .overlay-image {
       position: absolute;
       top: 0;
-      left: -100px;
+      left: 0px;
       width: 100%;
       height: 100%;
       mix-blend-mode: lighten;
@@ -108,20 +108,24 @@
           imagesContainer.innerHTML = '';
 
           devices.forEach(device => {
-            const { deviceId, imageUrl, payload } = device;
+            const { deviceId, imageUrl, payload, deviceDomain, deviceName } = device;
 
             const image = document.createElement('img');
             image.className = 'overlay-image';
-            image.setAttribute('data-device-id', deviceId);
+            image.setAttribute('data-device-id', deviceDomain + "/" + deviceName);
+            image.setAttribute('device-domain', deviceDomain );
+
             if (payload === 'ON') {
               image.style.display = 'initial';
             } else {
               image.style.display = 'none';
             }
             image.src = imageUrl;
+            image.alt = deviceDomain + "/" + deviceName;
 
             imagesContainer.appendChild(image);
           });
+
         });
     }
 

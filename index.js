@@ -112,8 +112,9 @@ function startMqttServer() {
     // Find the device corresponding to the topic and send the information through the websocket
     // console.log(`Received message from device: ${topic.split('/')[2]} : ${message.toString()}`);
 
-    deviceDomain = topic.split('/')[1]
     deviceId = topic.split('/')[2]
+    deviceDomain = topic.split('/')[1]
+    deviceName = topic.split('/')[2]
 
     const device = devices.get(topic.split('/')[2]);
     if (!device) return false
@@ -221,19 +222,23 @@ function startMqttServer() {
     if (deviceDomain == "wled"){
       // This device is a WLED
       // To identify if the device is on we refer ourself to the current preset
-      if (mqttMessage !== "PL=10"){
+      if (mqttMessage == "PL=16"){
         device.payload = "ON";
       }else{
         device.payload = "OFF";
       }
     }
+    
+    device.deviceId = deviceId;
+    device.deviceDomain = deviceDomain;
+    device.deviceName = deviceName;
 
     if (device) {
-      const { deviceId, imageUrl, payload, name } = device;
+      const { deviceId, imageUrl, payload, deviceDomain, deviceName } = device;
       const state = message.toString();
 
-      io.emit('atualizarImagem', { deviceId, imageUrl, payload, name });
-      io.emit('mensagemRecebida', { deviceId, state, name });
+      io.emit('atualizarImagem', { deviceId, imageUrl, payload, deviceDomain, deviceName });
+      io.emit('mensagemRecebida', { deviceId, state, deviceDomain, deviceName });
     }
   });
 
