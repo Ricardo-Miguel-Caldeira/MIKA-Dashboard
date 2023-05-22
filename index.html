@@ -1,31 +1,79 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Página de Imagens MQTT</title>
+  <title>Mika Dashboard</title>
+  <!-- ISSUE I'm unable to use this CSS in another file -->
   <style>
+    body {
+      position: relative;
+      min-height: 100vh;
+      margin: 0;
+    }
+
     .overlay-image {
       position: absolute;
       top: 0;
-      left: 0;
+      left: -100px;
       width: 100%;
       height: 100%;
       mix-blend-mode: lighten;
+      object-fit: contain;
     }
+
+    .menu {
+      background-color: #f1f1f1;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .message-box {
+      position: fixed;
+      bottom: 20px;
+      right: 0;
+      max-height: 200px;
+      overflow: auto;
+      background-color: #fff;
+      padding: 10px;
+    }
+
+    .footer {
+      position: absolute;
+      bottom: 0px;
+      left: 0;
+      width: 100%;
+      height: 30px;
+      background-color: #f1f1f1;
+      text-align: center;
+      line-height: 20px;
+    }
+
   </style>
 </head>
 <body>
-  <h1>Página de Imagens MQTT</h1>
+
+  <div class="menu">
+    <h1>MIKA Floorplan Dashboard</h1>
+  </div>
 
   <div id="images-container">
-    <!-- As imagens serão adicionadas dinamicamente aqui -->
+    <!-- Images will be dynamically added here -->
+  </div>
+
+  <div class="message-box">
+      <textarea id="mensagem-texto" rows="10" cols="50"></textarea>
+  </div>
+
+  <div class="footer">
+    <div class="footer-text">&copy; 2023 - MIKA </div>
   </div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.3.1/socket.io.js"></script>
   <script>
     const socket = io();
+    const mensagemTexto = document.getElementById('mensagem-texto');
 
     socket.on('connect', () => {
-      console.log('Conectado ao servidor');
+      console.log('Connected to the server');
     });
 
     socket.on('atualizarImagem', ({ deviceId, imageUrl, payload }) => {
@@ -42,8 +90,13 @@
       }
     });
 
+    socket.on('mensagemRecebida', (data) => {
+        // Atualizar o conteúdo da caixa de texto com a mensagem recebida
+        mensagemTexto.value += `${data.deviceId}: ${data.state}\n`;
+    });
+
     socket.on('disconnect', () => {
-      console.log('Desconectado do servidor');
+      console.log('Disconnected from the server');
     });
 
     function fetchDevices() {
@@ -71,10 +124,10 @@
         });
     }
 
-    // Solicitar informações dos dispositivos ao servidor e atualizar a página
+    // Request device information from the server and update the page
     fetchDevices();
 
-    // Atualizar a página automaticamente a cada 5 segundos
+    // Automatically refresh the page every 5 seconds
     setInterval(fetchDevices, 5000);
   </script>
 </body>

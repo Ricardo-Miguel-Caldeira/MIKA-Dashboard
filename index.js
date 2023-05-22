@@ -16,7 +16,7 @@ app.use('/1920x1080', express.static(path.join(__dirname, '1920x1080')));
 console.log(process.env.MYSQL_HOST)
 
 
-// Configuração da conexão com o banco de dados MySQL
+// Configuration for connecting to the MySQL database
 const db = mysql.createConnection({
     host: process.env.MYSQL_HOST,
     user: process.env.MYSQL_USERNAME,
@@ -24,22 +24,21 @@ const db = mysql.createConnection({
     database: process.env.MYSQL_DATABASE,
 }); 
 
-// Criação da coleção de dispositivos
+// Creation of the devices collection
 const devices = new Map();
 
 db.connect((err) => {
   if (err) {
-    console.error('Erro ao conectar ao banco de dados MySQL:', err);
+    console.error('Error connecting to MySQL database:', err);
     return;
   }
 
-  console.log('Conexão com o banco de dados MySQL estabelecida');
+  console.log('Connected to MySQL database');
 
-  // Carrega todos os dispositivos da base de dados numa colecção
-  //    Cada vez que um dispositivo 
+  // Load all devices from the database into the collection
   db.query('SELECT tele_topic, name, state_field, imageUrl FROM devices WHERE enable = 1 AND tele_topic IS NOT NULL', (err, rows) => {
     if (err) {
-      console.error('Erro ao buscar dispositivos no banco de dados MySQL:', err);
+      console.error('Error fetching devices from MySQL database:', err);
       return;
     }  
 
@@ -52,13 +51,13 @@ db.connect((err) => {
           payload: "OFF"
         };
       
-        // Verifica a existência da imagem
+        // Check if the image exists
         checkImageExists(row.imageUrl, (exists) => {
           if (exists) {
             devices.set(row.name, device);
           } else {
-            console.warn(`A imagem "${row.imageUrl}" não existe. Usando imagem alternativa.`);
-            device.imageUrl = '1920x1080/render.png'; // Especifique o caminho para a imagem alternativa
+            console.warn(`The image "${row.imageUrl}" does not exist. Using alternative image.`);
+            device.imageUrl = '1920x1080/render.png'; // Specify the path to the alternative image
             devices.set(row.name, device); 
           }
         });
@@ -66,7 +65,7 @@ db.connect((err) => {
 
     });
  
-    // Iniciar o servidor MQTT após carregar os dispositivos
+    // Start the MQTT server after loading the devices
     startMqttServer();
   });
 
@@ -74,24 +73,24 @@ db.connect((err) => {
   function checkImageExists(imagePath, callback) {
     fs.access(imagePath, fs.constants.F_OK, (err) => {
       if (!err) {
-        callback(true); // A imagem existe
+        callback(true); // The image exists
       } else {
-        console.warn(`A imagem "${imagePath}" não existe. Usando imagem alternativa.`);
-        callback(false); // A imagem não existe
+        console.warn(`The image "${imagePath}" does not exist. Using alternative image.`);
+        callback(false); // The image does not exist
       }
     });
   }
 
 function startMqttServer() {
-  // Configuração do servidor MQTT
-  const mqttClient = mqtt.connect('mqtt://10.1.10.17', {
-    username: 'rcaldeira',
-    password: 'XTAZII123'
+  // Configuration for the MQTT server
+  const mqttClient = mqtt.connect(process.env.MQTT_SERVER, {
+    username: process.env.MQTT_USERNAME,
+    password: process.env.MQTT_PASSWORD
   });
 
   mqttClient.on('connect', () => {
 
-    // Inscreva-se nos tópicos de cada dispositivo
+    // Subscribe to topics for each device
     //devices.forEach((device, topic) => {
     //  mqttClient.subscribe(topic);
     //});
@@ -104,8 +103,9 @@ function startMqttServer() {
   });
 
   mqttClient.on('message', (topic, message) => {
-    // Encontre o dispositivo correspondente ao tópico e envie as informações através do websocket
-    // console.log(`Mensagem recebida do device: ${topic.split('/')[2]} : ${message.toString()}`);
+    
+    // Find the device corresponding to the topic and send the information through the websocket
+    // console.log(`Received message from device: ${topic.split('/')[2]} : ${message.toString()}`);
 
     deviceDomain = topic.split('/')[1]
     deviceId = topic.split('/')[2]
@@ -117,7 +117,7 @@ function startMqttServer() {
     
     //console.log(device.stateField)
     
-    //  Para cada dominio temos uma forma especifica de identificar se o device está ON ou não
+    //  For each domain, we have a specific way of identifying whether the device is ON or not
     if (deviceDomain == "tasmota"){
         //console.log(mqttMessage);
         if ('POWER' in mqttMessage){
@@ -201,26 +201,27 @@ function startMqttServer() {
     }
 
     if (device) {
-      const { deviceId, imageUrl, payload } = device;
+      const { deviceId, imageUrl, payload, name } = device;
       const state = message.toString();
 
-      io.emit('atualizarImagem', { deviceId, imageUrl, payload });
+      io.emit('atualizarImagem', { deviceId, imageUrl, payload, name });
+      io.emit('mensagemRecebida', { deviceId, state, name });
     }
   });
 
-  // Rota para servir o arquivo JSON contendo as informações dos dispositivos
+  // Route to serve the JSON file containing the devices' information
   app.get('/devices', (req, res) => {
     const devicesArray = Array.from(devices.values());
     res.json(devicesArray);
   });
 
-  // Rota para servir a página HTML
+  // Route to serve the HTML page
   app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
   });
 
-  // Iniciar o servidor HTTP
+  // Start the HTTP server
   http.listen(3000, () => {
-    console.log('Servidor Node.js executando na porta 3000');
+    console.log('Node.js server running on port 3000');
   });
 }
