@@ -3,7 +3,7 @@
 MIKA dashboard is intended to be a NodeJS MQTT Dashboard.
 
 MIKA subscribes MQTT topics from one authenticated MQTT server and when a message is delivered it shows the corresponding blended 3d images for each device that is ON/OFF.
-Each device correspondes to one PNG image (State ON) and is served in the front end to all clients.
+Each device is one PNG image (State ON) and is served in the front end to all clients connected.
 
 MIKA also receives initial device information from one MySQL database, at startup only and uses websockets to refresh the devices enable in the client browsers.
 
@@ -15,11 +15,9 @@ Known issues:
 
 MQTT topics to subscribe is still not impelemnented. Currently only all topics per domain is available.
 There is no login/credentials required as this is intended to work locally.
-Some browsers are not outputing the images. Reason unkown. It works fine Chrome. 
+Some browsers are not outputing the images. Reason unkown. It works fine Chrome. The original concept was to use this project in smart tv browsers.
 
-This project is still under development and in early stage of development.
-
-
+Please be advised that this project is still under development and in early stage of development.
 
 Example of images used:
 
