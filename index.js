@@ -36,7 +36,7 @@ db.connect((err) => {
   console.log('Connected to MySQL database');
 
   // Load all devices from the database into the collection
-  db.query('SELECT tele_topic, name, state_field, imageUrl FROM devices WHERE enable = 1 AND tele_topic IS NOT NULL', (err, rows) => {
+  db.query('SELECT tele_topic, name, state_field, imageUrl, power_level1, power_level2, power_level3 FROM devices WHERE enable = 1 AND tele_topic IS NOT NULL', (err, rows) => {
     if (err) {
       console.error('Error fetching devices from MySQL database:', err);
       return;
@@ -48,6 +48,9 @@ db.connect((err) => {
           deviceName: row.name,
           stateField: row.state_field,
           imageUrl: row.imageUrl,
+          powerLevel1: row.power_level1,
+          powerLevel2: row.power_level2,
+          powerLevel3: row.power_level3,
           payload: "OFF"
         };
       
@@ -91,13 +94,15 @@ function startMqttServer() {
   mqttClient.on('connect', () => {
 
     // Subscribe to topics for each device
+    // TODO
     //devices.forEach((device, topic) => {
     //  mqttClient.subscribe(topic);
     //});
 
-    mqttClient.subscribe('zigbee2mqtt/tasmota/+/tele/STATE');
+    mqttClient.subscribe('zigbee2mqtt/tasmota/+/tele/SENSOR');
     mqttClient.subscribe('zigbee2mqtt/lled/+');
     mqttClient.subscribe('zigbee2mqtt/switch/+');
+    mqttClient.subscribe('zigbee2mqtt/wled/+/api');
 
 
   });
@@ -113,23 +118,35 @@ function startMqttServer() {
     const device = devices.get(topic.split('/')[2]);
     if (!device) return false
 
-    const mqttMessage = JSON.parse(message);
+    if (deviceDomain !== "wled"){
+      mqttMessage = JSON.parse(message);
+    }else{
+      mqttMessage = message;
+    }
     
     //console.log(device.stateField)
     
     //  For each domain, we have a specific way of identifying whether the device is ON or not
     if (deviceDomain == "tasmota"){
-        //console.log(mqttMessage);
-        if ('POWER' in mqttMessage){
-            if (mqttMessage.POWER == "ON"){
+        // This device is a Tasmota enabled device. Most probably has power metering
+        // Each device has 3 levels of power to help us identifing the current state
+
+        // console.log(`${deviceId} - ${message} ${mqttMessage.ENERGY}`);
+        if ('ENERGY' in mqttMessage){
+          
+          // We conside ON if the Power is higher then powerLevel1 we will present the device.
+          if (mqttMessage.ENERGY.Power > device.powerLevel1){
+                //console.log(`${deviceId} is ON ${mqttMessage.ENERGY.Power}/${device.powerLevel1}`);
                 device.payload = "ON";
             }else{
                 device.payload = "OFF";
-            }
+          }
         }
     }
 
     if (deviceDomain == "lled"){
+        // This device is one led lamp
+
         //console.log(mqttMessage);
         if ('state' in mqttMessage){
             if (mqttMessage.state == "ON"){
@@ -141,14 +158,15 @@ function startMqttServer() {
     }
 
     if (deviceDomain == "switch"){
-        
-        // device may have state_left and state_right
+        // Device is a wall switch
+
+        // This kind of device may have state_left and state_right status messages
         if ('state_l1' in mqttMessage && 'state_l2' in mqttMessage){
             
-            console.log(`${deviceId} has STATE L1 OR L2`);
+            //console.log(`${deviceId} has STATE L1 OR L2`);
 
             if ('state_l1' in mqttMessage && device.stateField == "state_l1"){
-                console.log(`${deviceId} STATE LEFT: ${mqttMessage.state_left}`);
+                //console.log(`${deviceId} STATE LEFT: ${mqttMessage.state_left}`);
                 if (mqttMessage.state_l1 == "ON"){
                     device.payload = "ON";
                 }else{
@@ -157,7 +175,7 @@ function startMqttServer() {
             }
 
             if ('state_l2' in mqttMessage && device.stateField == "state_l2"){
-                console.log(`${deviceId} STATE RIGHT: ${mqttMessage.state_right}`);
+                //console.log(`${deviceId} STATE RIGHT: ${mqttMessage.state_right}`);
                 if (mqttMessage.state_l2 == "ON"){
                     device.payload = "ON";
                 }else{
@@ -167,10 +185,10 @@ function startMqttServer() {
 
         }else if ('state_left' in mqttMessage && 'state_right' in mqttMessage){
 
-            console.log(`${deviceId} has STATE LEFT OR RIGHT`);
+            //console.log(`${deviceId} has STATE LEFT OR RIGHT`);
 
             if ('state_left' in mqttMessage && device.stateField == "state_left"){
-                console.log(`${deviceId} STATE LEFT: ${mqttMessage.state_left}`);
+                //console.log(`${deviceId} STATE LEFT: ${mqttMessage.state_left}`);
                 if (mqttMessage.state_left == "ON"){
                     device.payload = "ON";
                 }else{
@@ -179,7 +197,7 @@ function startMqttServer() {
             }
 
             if ('state_right' in mqttMessage && device.stateField == "state_right"){
-                console.log(`${deviceId} STATE RIGHT: ${mqttMessage.state_right}`);
+                //console.log(`${deviceId} STATE RIGHT: ${mqttMessage.state_right}`);
                 if (mqttMessage.state_right == "ON"){
                     device.payload = "ON";
                 }else{
@@ -200,6 +218,16 @@ function startMqttServer() {
         }
     }
 
+    if (deviceDomain == "wled"){
+      // This device is a WLED
+      // To identify if the device is on we refer ourself to the current preset
+      if (mqttMessage == "PL=10"){
+        device.payload = "ON";
+      }else{
+        device.payload = "OFF";
+      }
+    }
+    
     if (device) {
       const { deviceId, imageUrl, payload, name } = device;
       const state = message.toString();
@@ -221,7 +249,7 @@ function startMqttServer() {
   });
 
   // Start the HTTP server
-  http.listen(3000, () => {
-    console.log('Node.js server running on port 3000');
+  http.listen(80, () => {
+    console.log('Node.js server running on port 80');
   });
 }
