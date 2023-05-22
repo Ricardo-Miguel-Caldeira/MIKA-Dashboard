@@ -7,6 +7,12 @@ Each device correspondes to one PNG image that is served in the front end.
 
 MIKA also receives initial device information from one MySQL database, at startup only and uses websockets to refresh the devices enable in the client browsers.
 
+Known issues:
+Some browsers are not outputing the images. Reason unkown. It works fine Chrome. 
+
+This project is still under development and in early stage of development.
+
+
 Example of images used:
 
 ![render0011](https://github.com/Ricardo-Miguel-Caldeira/MIKA-Dashboard/assets/52119136/5853f54b-5ff7-4278-a3b1-e5c45e20aa17)
