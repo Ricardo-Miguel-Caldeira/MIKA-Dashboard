@@ -1,8 +1,11 @@
 ﻿# MIKA-Dashboard
 
-Mika dashboard is a NodeJS app that receives MQTT messages and shows corresponding blended 3d images if the device is ON/OFF.
+MIKA dashboard is intended to be a NodeJS MQTT Dashboard.
 
-It receives device information from MySQL database when started and uses websockets to refresh the devices in the clients.
+MIKA subscribes MQTT messages from one authenticated server and when message is delivered shows corresponding blended 3d images if the device is ON/OFF.
+Each device correspondes to one PNG image that is served in the front end.
+
+MIKA also receives initial device information from one MySQL database, at startup only and uses websockets to refresh the devices enable in the client browsers.
 
 Example of images used:
 
