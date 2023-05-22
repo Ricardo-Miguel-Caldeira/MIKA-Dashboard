@@ -13,9 +13,6 @@ const path = require('path');
 const staticDirectory = path.join(__dirname, '1920x1080');
 app.use('/1920x1080', express.static(path.join(__dirname, '1920x1080')));
 
-console.log(process.env.MYSQL_HOST)
-
-
 // Configuration for connecting to the MySQL database
 const db = mysql.createConnection({
     host: process.env.MYSQL_HOST,
